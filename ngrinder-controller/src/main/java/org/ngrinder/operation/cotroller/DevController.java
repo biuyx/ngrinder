@@ -1,4 +1,4 @@
-/* 
+/*
  * Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -9,17 +9,22 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License. 
+ * limitations under the License.
  */
 package org.ngrinder.operation.cotroller;
 
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 /**
  * Developer Feature.
@@ -46,4 +51,13 @@ public class DevController {
 		return "redirect:/";
 	}
 
+	@GetMapping("/invalidate")
+	@ResponseBody
+	public String invalidate(HttpServletRequest request) {
+		HttpSession session = request.getSession(false);
+		String s = session.getId();
+		int i = session.getMaxInactiveInterval();
+		session.setMaxInactiveInterval(1);
+		return s + "\n" + i;
+	}
 }
