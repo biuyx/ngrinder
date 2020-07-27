@@ -53,6 +53,7 @@ import static org.ngrinder.common.util.JsonUtils.deserialize;
 import static org.ngrinder.common.util.NoOp.noOp;
 import static org.ngrinder.common.util.PathUtils.removePrependedSlash;
 import static org.ngrinder.common.util.TypeConvertUtils.cast;
+import static org.ngrinder.script.handler.GroovyMavenProjectScriptHandler.JAVA;
 import static org.ngrinder.script.model.FileType.getFileTypeByName;
 import static org.tmatesoft.svn.core.SVNDepth.INFINITY;
 import static org.tmatesoft.svn.core.SVNURL.parseURIEncoded;
@@ -76,8 +77,6 @@ public class GitHubFileEntryService {
 
 	private final PerfTestService perfTestService;
 
-	private static final String MAVEN_PATH = "src/main/java";
-
 	private static final RateLimitHandlerEx rateLimitHandlerEx = new RateLimitHandlerEx();
 
 	public GitHubFileEntryService(FileEntryService fileEntryService, @Lazy ObjectMapper objectMapper,
@@ -91,7 +90,7 @@ public class GitHubFileEntryService {
 	public FileEntry getOne(GHRepository ghRepository, GitHubConfig gitHubConfig, String scriptPath) {
 		String fullPath = getCheckoutDirPath(ghRepository, gitHubConfig, scriptPath);
 		if (proxy(this).isGroovyMavenProject(ghRepository, scriptPath, gitHubConfig.getBranch())) {
-			fullPath += scriptPath.substring(scriptPath.indexOf(MAVEN_PATH));
+			fullPath += scriptPath.substring(scriptPath.indexOf(JAVA));
 			FileEntry fileEntry = createGitHubScriptFileEntry(fullPath);
 			fileEntry.getProperties().put("type", "groovy-maven");
 			fileEntry.getProperties().put("scriptPath", scriptPath);
@@ -186,12 +185,12 @@ public class GitHubFileEntryService {
 
 	@Cacheable(value = CACHE_GITHUB_IS_MAVEN_GROOVY, key = "#ghRepository.svnUrl + #scriptPath + #activeBranch")
 	public boolean isGroovyMavenProject(GHRepository ghRepository, String scriptPath, String activeBranch) {
-		if (!scriptPath.contains(MAVEN_PATH)) {
+		if (!scriptPath.contains(JAVA)) {
 			return false;
 		}
 
 		try {
-			List<GHContent> ghContents = ghRepository.getDirectoryContent(scriptPath.split(MAVEN_PATH)[0], activeBranch);
+			List<GHContent> ghContents = ghRepository.getDirectoryContent(scriptPath.split(JAVA)[0], activeBranch);
 			return ghContents.stream().anyMatch(ghContent -> ghContent.getName().equals("pom.xml"));
 		} catch (IOException e) {
 			return false;
@@ -230,7 +229,7 @@ public class GitHubFileEntryService {
 			String checkoutScriptPath;
 			URI uri = new URI(getGitHubBaseUrl(gitHubConfig));
 			if (proxy(this).isGroovyMavenProject(ghRepository, scriptPath, gitHubConfig.getBranch())) {
-				checkoutScriptPath = scriptPath.split(MAVEN_PATH)[0];
+				checkoutScriptPath = scriptPath.split(JAVA)[0];
 			} else {
 				checkoutScriptPath = getFullPath(scriptPath);
 			}
@@ -370,7 +369,7 @@ public class GitHubFileEntryService {
 		checkoutBaseUrl += isDefaultBranch ? "/trunk" : "/branches/" + activeBranch;
 		SVNURL checkoutUrl;
 		if (proxy(this).isGroovyMavenProject(ghRepository, scriptPath, activeBranch)) {
-			checkoutUrl = parseURIEncoded(checkoutBaseUrl + "/" + scriptPath.split(MAVEN_PATH)[0]);
+			checkoutUrl = parseURIEncoded(checkoutBaseUrl + "/" + scriptPath.split(JAVA)[0]);
 		} else {
 			checkoutUrl = parseURIEncoded(checkoutBaseUrl + "/" + getFullPath(scriptPath));
 		}
